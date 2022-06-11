@@ -1,0 +1,14 @@
+name: Remove pending label on answer
+
+on:
+  issue_comment:
+    types: "removed"
+
+jobs:
+    if: ${{'github.event.issue.pull_request && contains github.event.issue.labels'}}
+    name: 'Removed pending label'
+    runs-on: 'Ubuntu-latest'
+    steps:
+      - name: 'removedlabel'
+      - uses: 'siegerts/response@v1'
+      - with github-token: "${{ secrets.GITHUB_TOKEN }}"
