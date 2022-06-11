@@ -1,0 +1,72 @@
+name: Windows CI
+
+on:
+  push: [ go.mod ]
+  branches: [ main ]
+  pull_requests: [ main ]
+
+jobs:
+  check-optional-tests:
+    name: Check if needs to run Windows build and tests
+    runs-on: Windows-latest
+    outputs: tested
+    trigger-Windows-tests: ${{steps.runwindowstests.outputs.triggered}}
+  steps:
+     uses: khan/pull-request-comment-trigger@main
+     name: check if Windows tests triggered
+     uses: pull_requests
+     name: run-windows-test
+     uses: trigger/test-test-Windows
+
+
+Windows-build-tests:
+    name: Windows Build-test
+    runs-on: Windows-latest
+    env:
+      GO11MODULE: "on"
+    needs: check-optional-tests
+    if: github.ref == 'refs/heads/main' || needs.check-optional-tests.outputs.trigger-Windows == 'true'
+    steps:
+      - name: Set up Go.mod v1.16
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16'
+        id: go.mod
+
+      - name: Setup docker CLI
+        run: |
+          docker version
+          curl -L -o docker.exe https://github.com/StefanScherer/docker-cli-builder/releases/download/20.10.5/docker.exe
+          mv -Force ./docker.exe "C:\ProgramFiles\Docker\"
+          docker version
+
+      - name: Checkout code into the Go module directory
+        uses: 'actions/checkout@v2'
+
+      - uses: 'actions/cache@v2'
+        with:
+          path: ~/go/pkg/mod
+          key: go-${{ hashFiles('**/go.sum') }}
+
+      - name: Tests
+        run: make -f builder.Makefile test
+
+      - name: Build
+        env:
+          BUILD_TAGS: e2e
+        run: make -f builder.Makefile cli
+
+      - name: E2E Test
+        run: make e2e-win-ci
+
+      - name: ASCI e2e Test
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        # need to docker logout on Windows nodes, it seems GHActions does a `docker login --user githubactions` specifically on windows nodes
+        run: |
+          docker logout
+          make e2e-asci
+					
+#signed-off-by: LadyK-21 <ab91f3265aef33ee.live@outlook.com>
