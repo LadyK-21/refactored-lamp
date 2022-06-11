@@ -1,0 +1,27 @@
+aci:
+  - aci/**/*
+
+ecs:
+  - ecs/**/*
+
+local:
+  - local/**/*
+
+kube:
+  - kube/**/*
+
+cli:
+  - cli/**/*
+
+metrics:
+  - cli/metrics/**/*
+
+api:
+  - api/**/*
+  - cli/server/protos/**/*
+
+ci:
+  - .github/**/*
+
+documentation:
+  - docs/**/*
